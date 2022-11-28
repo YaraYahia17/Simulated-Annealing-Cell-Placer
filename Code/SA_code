@@ -1,1 +1,194 @@
+import random
+# import math
+# import numpy as np
+from mpmath import *
 
+f = open("test.txt", "r")
+input_file = f.readline()
+input_file_line_elements = input_file.split()
+
+number_of_cells = input_file_line_elements[0]
+number_of_connections = input_file_line_elements[1]
+row = int(input_file_line_elements[2])
+column = int(input_file_line_elements[3])
+
+# print(number_of_cells, number_of_connections, row, column)
+
+input_file1 = f.readlines()
+lst4 = []
+s = 1
+for s in input_file1:
+    lst3 = []
+    ele = s.split()
+    for h in range(1, len(ele)):
+        lst3.append(ele[h])
+    # print("Net's cells list", lst3)
+    lst4.append(lst3)
+
+# print(lst4)
+
+grid = [['--' for i in range(column)] for j in range(row)]
+
+cells = []
+
+for i in range(int(number_of_cells)):
+    cells.append([i, 0, 0])
+    # cells.append(i)
+
+
+# print(cells)
+
+for cell in cells:
+    cell_row = random.randint(0, row - 1)
+    cell_column = random.randint(0, column - 1)
+
+    if grid[cell_row][cell_column] == '--':
+
+        cell[1] = cell_row
+        cell[2] = cell_column
+
+        grid[cell_row][cell_column] = cell
+
+    else:
+        while grid[cell_row][cell_column] != '--':
+            cell_row = random.randint(0, row - 1)
+            cell_column = random.randint(0, column - 1)
+
+        cell[1] = cell_row
+        cell[2] = cell_column
+        grid[cell_row][cell_column] = cell
+
+print("initial placement")
+for i in range(row):
+    for j in range(column):
+        if grid[i][j] != '--':
+            [c, x, y] = grid[i][j]
+            print(c, end=' ')
+        else:
+            print('--', end=' ')
+    print()
+
+
+# for i in range(len(lst4)):
+#     for j in range(len(cells)):
+print()
+wl = 0
+
+for i in lst4:
+    co_x = []
+    co_y = []
+    for j in range(len(i)):
+
+        for k in range(len(cells)):
+
+            [c, x, y] = cells[k]
+            if c == int(i[j]):
+                co_x.append(x)
+                co_y.append(y)
+
+    # print(co_x, co_y)
+    # print("min x ", min(co_x), "  min y ", min(co_y))
+    # print("max x ", max(co_x), "  max y ", max(co_y))
+    wl = wl + (max(co_x) - min(co_x)) + (max(co_y) - min(co_y))
+
+print("wire length: ", wl)
+
+f.close()
+
+initial_wl = wl
+
+initial_temp = 500 * initial_wl
+final_temp = 0.000005 * initial_temp / float(number_of_connections)
+current_temp = initial_temp
+next_temp = 0.95 * current_temp
+moves_per_temp = 10 * int(number_of_cells)
+count_moves = 0
+
+
+while current_temp > final_temp:
+    # picking 2 random cells
+    rand_cell1_index = random.randint(0, len(cells) - 1)
+    rand_cell2_index = random.randint(0, len(cells) - 1)
+    # rand_cell1 = random.choice(cells)
+    # rand_cell2 = random.choice(cells)
+
+    while rand_cell1_index == rand_cell2_index:
+        rand_cell2_index = random.randint(0, len(cells) - 1)
+
+    [c1, x1, y1] = cells[rand_cell1_index]
+    [c2, x2, y2] = cells[rand_cell2_index]
+    # print()
+    # print(rand_cell1_index)
+    # print("before swap: ", cells)
+
+    temp_cell = cells[rand_cell1_index][0]
+    cells[rand_cell1_index][0] = cells[rand_cell2_index][0]
+    cells[rand_cell2_index][0] = temp_cell
+    # print("swapped cells: ", cells[rand_cell1_index][0], cells[rand_cell2_index][0])
+    # print("after swap: ", cells)
+    swapped_wl = 0
+
+    for i in lst4:
+        co_x = []
+        co_y = []
+        for j in range(len(i)):
+
+            for k in range(len(cells)):
+
+                [c, x, y] = cells[k]
+                if c == int(i[j]):
+                    co_x.append(x)
+                    co_y.append(y)
+
+        # print(co_x, co_y)
+        # print("min x ", min(co_x), "  min y ", min(co_y))
+        # print("max x ", max(co_x), "  max y ", max(co_y))
+        swapped_wl = swapped_wl + (max(co_x) - min(co_x)) + (max(co_y) - min(co_y))
+
+    # print(swapped_wl)
+
+    delta_wl = wl - swapped_wl
+    p = random.uniform(0, 1)
+    e = exp((delta_wl / current_temp))
+    # print("probability to accept ", p)
+
+    # scheduling temperature
+    if delta_wl > 0:
+        wl = swapped_wl
+    elif p < e:
+        wl = swapped_wl
+    else:
+        temp_cell = cells[rand_cell1_index][0]
+        cells[rand_cell1_index][0] = cells[rand_cell2_index][0]
+        cells[rand_cell2_index][0] = temp_cell
+
+    # print()
+    # print("after swap: ")
+    # for i in range(row):
+    #     for j in range(column):
+    #         if grid[i][j] != '--':
+    #             [c, x, y] = grid[i][j]
+    #             print(c, end=' ')
+    #         else:
+    #             print('--', end=' ')
+    #     print()
+    if count_moves >= moves_per_temp:
+        count_moves = 0
+        current_temp = next_temp
+        next_temp = 0.95 * current_temp
+    else:
+        count_moves = count_moves + 1
+
+print()
+print("final placement: ")
+for i in range(row):
+    for j in range(column):
+        if grid[i][j] != '--':
+            [c, x, y] = grid[i][j]
+            print(c, end=' ')
+        else:
+            print('--', end=' ')
+    print()
+
+print()
+print("wire length: ", wl)
